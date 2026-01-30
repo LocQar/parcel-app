@@ -367,6 +367,7 @@ const FinancialModel = () => {
 
   const pb = projs.length > 0 ? projs.find((p, i) => i > 0 && p.cumFcf >= 0) : null;
   const npv = projs.slice(1).reduce((s, p, i) => s + p.fcf / Math.pow(1 + inputs.discountRate / 100, i + 1), -equity);
+  const fcf5 = projs.slice(1).reduce((s, p) => s + p.fcf, 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -412,56 +413,168 @@ const FinancialModel = () => {
             <div className="space-y-4 pb-8">
               {activeTab === 'dashboard' && (
                 <>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-4 text-white shadow">
+                  {/* Top Metrics Banner */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-9 gap-2 mb-6">
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-3 text-white shadow">
                       <div className="text-xs opacity-90 mb-1">NPV</div>
-                      <div className="text-2xl font-bold">{_f(npv)}</div>
+                      <div className="text-base md:text-xl font-bold">{_f(npv)}</div>
                       <div className="text-xs opacity-75">@ {inputs.discountRate}%</div>
                     </div>
-                    <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-4 text-white shadow">
+                    <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-3 text-white shadow">
                       <div className="text-xs opacity-90 mb-1">IRR</div>
-                      <div className="text-2xl font-bold">{_pct(irr * 100)}</div>
-                      <div className="text-xs opacity-75">{irr * 100 > inputs.discountRate ? '✓' : '✗'}</div>
+                      <div className="text-base md:text-xl font-bold">{_pct(irr * 100)}</div>
+                      <div className="text-xs opacity-75">{irr * 100 > inputs.discountRate ? '✓ Hurdle' : '✗'}</div>
                     </div>
-                    <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-4 text-white shadow">
+                    <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-3 text-white shadow">
                       <div className="text-xs opacity-90 mb-1">Payback</div>
-                      <div className="text-2xl font-bold">{pb ? `${pb.yr.toFixed(1)}y` : 'N/A'}</div>
+                      <div className="text-base md:text-xl font-bold">{pb ? `${pb.yr.toFixed(1)}y` : 'N/A'}</div>
+                      <div className="text-xs opacity-75">{pb && pb.yr <= 5 ? '✓ 5yr' : ''}</div>
                     </div>
-                    <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-4 text-white shadow">
-                      <div className="text-xs opacity-90 mb-1">Y1 Revenue</div>
-                      <div className="text-2xl font-bold">{_f(y1.rev || 0)}</div>
-                      <div className="text-xs opacity-75">{y1.gm ? _pct(y1.gm) : '0%'} GM</div>
+                    <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-3 text-white shadow">
+                      <div className="text-xs opacity-90 mb-1">5Y Profit</div>
+                      <div className="text-base md:text-xl font-bold">{_f(projs.slice(1).reduce((s, p) => s + p.ni, 0))}</div>
+                      <div className="text-xs opacity-75">Net Inc</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-lg p-3 text-white shadow">
+                      <div className="text-xs opacity-90 mb-1">Y1 Rev</div>
+                      <div className="text-base md:text-xl font-bold">{_f(y1.rev || 0)}</div>
+                      <div className="text-xs opacity-75">{y1.gm ? _pct(y1.gm) : '0.0%'} GM</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg p-3 text-white shadow">
+                      <div className="text-xs opacity-90 mb-1">Y1 Profit</div>
+                      <div className="text-base md:text-xl font-bold">{_f(y1.ni || 0)}</div>
+                      <div className="text-xs opacity-75">{y1.nm ? _pct(y1.nm) : '0.0%'} NM</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg p-3 text-white shadow">
+                      <div className="text-xs opacity-90 mb-1">Student</div>
+                      <div className="text-base md:text-xl font-bold">
+                        {inputs.numStudentLockers > 0 && y1.subs ? Math.round(y1.subs / inputs.numStudentLockers) : 0}
+                      </div>
+                      <div className="text-xs opacity-75">subs/loc</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-violet-500 to-violet-600 rounded-lg p-3 text-white shadow">
+                      <div className="text-xs opacity-90 mb-1">Commercial</div>
+                      <div className="text-base md:text-xl font-bold">
+                        {inputs.numCommercialLockers > 0 && y1.dels ? Math.round((y1.dels * 12) / inputs.numCommercialLockers) : 0}
+                      </div>
+                      <div className="text-xs opacity-75">del/yr</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg p-3 text-white shadow">
+                      <div className="text-xs opacity-90 mb-1">DropBox</div>
+                      <div className="text-base md:text-xl font-bold">
+                        {inputs.numDropBoxes > 0 && y1.p2ps ? Math.round((y1.p2ps * 12) / inputs.numDropBoxes) : 0}
+                      </div>
+                      <div className="text-xs opacity-75">p2p/yr</div>
                     </div>
                   </div>
+
+                  {/* Large Feature Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-4 md:p-6 text-white shadow-lg">
+                      <div className="text-xs md:text-sm opacity-90 mb-1">NPV @ {inputs.discountRate}%</div>
+                      <div className="text-2xl md:text-3xl font-bold">{_f(npv)}</div>
+                      <div className="text-xs opacity-75 mt-2">{npv > 0 ? '✓ Positive' : '✗ Negative'}</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-4 md:p-6 text-white shadow-lg">
+                      <div className="text-xs md:text-sm opacity-90 mb-1">IRR</div>
+                      <div className="text-2xl md:text-3xl font-bold">{_pct(irr * 100)}</div>
+                      <div className="text-xs opacity-75 mt-2">{irr * 100 > inputs.discountRate ? '✓ Above Hurdle' : '✗ Below Hurdle'}</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-4 md:p-6 text-white shadow-lg">
+                      <div className="text-xs md:text-sm opacity-90 mb-1">Payback Period</div>
+                      <div className="text-2xl md:text-3xl font-bold">{pb ? `${pb.yr.toFixed(1)}y` : 'N/A'}</div>
+                      <div className="text-xs opacity-75 mt-2">{pb && pb.yr <= 5 ? '✓ Within 5 years' : '✗ Beyond 5 years'}</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-4 md:p-6 text-white shadow-lg">
+                      <div className="text-xs md:text-sm opacity-90 mb-1">5-Year FCF</div>
+                      <div className="text-2xl md:text-3xl font-bold">{_f(fcf5)}</div>
+                      <div className="text-xs opacity-75 mt-2">Total Cash Generated</div>
+                    </div>
+                  </div>
+
+                  {/* Revenue & Margins Cards */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <Card>
+                      <CardHeader><CardTitle className="text-lg">Revenue Breakdown (Year 1)</CardTitle></CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center p-3 bg-blue-50 rounded">
+                            <span className="text-sm">Subscriptions</span>
+                            <span className="font-bold text-sm">{_f(y1.subR)}</span>
+                          </div>
+                          <div className="flex justify-between items-center p-3 bg-green-50 rounded">
+                            <span className="text-sm">Deliveries</span>
+                            <span className="font-bold text-sm">{_f(y1.delR)}</span>
+                          </div>
+                          <div className="flex justify-between items-center p-3 bg-purple-50 rounded">
+                            <span className="text-sm">P2P Transfers</span>
+                            <span className="font-bold text-sm">{_f(y1.p2pR)}</span>
+                          </div>
+                          <div className="flex justify-between items-center p-3 bg-gray-100 rounded font-bold">
+                            <span className="text-sm">Total Revenue</span>
+                            <span className="text-sm">{_f(y1.rev)}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader><CardTitle className="text-lg">Key Margins (Year 1)</CardTitle></CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center p-3 bg-green-50 rounded">
+                            <span className="text-sm">Gross Margin</span>
+                            <span className="font-bold text-sm">{_pct(y1.gm)}</span>
+                          </div>
+                          <div className="flex justify-between items-center p-3 bg-blue-50 rounded">
+                            <span className="text-sm">EBITDA Margin</span>
+                            <span className="font-bold text-sm">{_pct(y1.em)}</span>
+                          </div>
+                          <div className="flex justify-between items-center p-3 bg-purple-50 rounded">
+                            <span className="text-sm">Net Margin</span>
+                            <span className="font-bold text-sm">{_pct(y1.nm)}</span>
+                          </div>
+                          <div className="flex justify-between items-center p-3 bg-orange-50 rounded">
+                            <span className="text-sm">Net Income</span>
+                            <span className="font-bold text-sm">{_f(y1.ni)}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* 5-Year Trend Table */}
                   <Card>
-                    <CardHeader><CardTitle>5-Year Projections</CardTitle></CardHeader>
+                    <CardHeader><CardTitle className="text-lg">5-Year Revenue & Profitability Trend</CardTitle></CardHeader>
                     <CardContent>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead className="bg-gray-50 border-b">
+                      <TableWrapper>
+                        <table className="w-full text-xs md:text-sm min-w-[500px]">
+                          <thead className="bg-gray-100">
                             <tr>
-                              <th className="px-4 py-2 text-left">Year</th>
-                              <th className="px-4 py-2 text-right">Revenue</th>
-                              <th className="px-4 py-2 text-right">EBITDA</th>
-                              <th className="px-4 py-2 text-right">Net Income</th>
-                              <th className="px-4 py-2 text-right">FCF</th>
-                              <th className="px-4 py-2 text-right">Cum FCF</th>
+                              <th className="px-2 md:px-4 py-2 text-left">Metric</th>
+                              {projs.slice(1).map(p => <th key={p.yr} className="px-2 md:px-4 py-2 text-right">Year {p.yr}</th>)}
                             </tr>
                           </thead>
                           <tbody>
-                            {projs.slice(1).map((p, i) => (
-                              <tr key={i} className="border-b hover:bg-gray-50">
-                                <td className="px-4 py-2">{p.yr}</td>
-                                <td className="px-4 py-2 text-right">{_f(p.rev)}</td>
-                                <td className="px-4 py-2 text-right text-blue-600">{_f(p.ebitda)}</td>
-                                <td className="px-4 py-2 text-right font-medium">{_f(p.ni)}</td>
-                                <td className="px-4 py-2 text-right">{_f(p.fcf)}</td>
-                                <td className="px-4 py-2 text-right font-bold">{_f(p.cumFcf)}</td>
-                              </tr>
-                            ))}
+                            <tr className="border-t">
+                              <td className="px-2 md:px-4 py-2 font-medium">Revenue</td>
+                              {projs.slice(1).map(p => <td key={p.yr} className="px-2 md:px-4 py-2 text-right">{_f(p.rev)}</td>)}
+                            </tr>
+                            <tr className="border-t bg-green-50">
+                              <td className="px-2 md:px-4 py-2 font-medium">EBITDA</td>
+                              {projs.slice(1).map(p => <td key={p.yr} className="px-2 md:px-4 py-2 text-right">{_f(p.ebitda)}</td>)}
+                            </tr>
+                            <tr className="border-t">
+                              <td className="px-2 md:px-4 py-2 font-medium">Net Income</td>
+                              {projs.slice(1).map(p => <td key={p.yr} className="px-2 md:px-4 py-2 text-right">{_f(p.ni)}</td>)}
+                            </tr>
+                            <tr className="border-t bg-blue-50">
+                              <td className="px-2 md:px-4 py-2 font-medium">Free Cash Flow</td>
+                              {projs.slice(1).map(p => <td key={p.yr} className="px-2 md:px-4 py-2 text-right">{_f(p.fcf)}</td>)}
+                            </tr>
                           </tbody>
                         </table>
-                      </div>
+                      </TableWrapper>
                     </CardContent>
                   </Card>
                 </>
